@@ -17,7 +17,11 @@ USE_ONEDRIVE = os.getenv('USE_ONEDRIVE', 'false').lower() == 'true'
 
 if USE_ONEDRIVE:
     try:
-        from graph_client import read_ventas_sheet, read_almacen_sheet, GraphAPIError
+        # Intentar import relativo (para Render) o directo (local)
+        try:
+            from backend.graph_client import read_ventas_sheet, read_almacen_sheet, GraphAPIError
+        except ImportError:
+            from graph_client import read_ventas_sheet, read_almacen_sheet, GraphAPIError
         print("✅ Modo OneDrive activado - usando Microsoft Graph API")
     except ImportError as e:
         print(f"⚠️  Error importando graph_client: {e}")
