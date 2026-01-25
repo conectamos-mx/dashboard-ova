@@ -201,15 +201,15 @@ def get_file_info(item_id: str) -> Dict[str, Any]:
 
 
 # Funciones de conveniencia para los archivos específicos
-def read_ventas_sheet(sheet_name: str, header: int = 7) -> pd.DataFrame:
+def read_ventas_sheet(sheet_name: str, header: int = 7, **kwargs) -> pd.DataFrame:
     """Lee una hoja del archivo de ventas"""
     if not EXCEL_VENTAS_ITEM_ID:
         raise GraphAPIError("EXCEL_VENTAS_ITEM_ID no configurado en variables de entorno")
-    return read_excel_sheet(EXCEL_VENTAS_ITEM_ID, sheet_name, header)
+    return read_excel_sheet(EXCEL_VENTAS_ITEM_ID, sheet_name, header, **kwargs)
 
 
-def read_almacen_sheet(sheet_name: str, header: int = 9) -> pd.DataFrame:
+def read_almacen_sheet(sheet_name: str, header: int = 9, **kwargs) -> pd.DataFrame:
     """Lee una hoja del archivo de almacén"""
     if not EXCEL_ALMACEN_ITEM_ID:
         raise GraphAPIError("EXCEL_ALMACEN_ITEM_ID no configurado en variables de entorno")
-    return read_excel_sheet(EXCEL_ALMACEN_ITEM_ID, sheet_name, header)
+    return read_excel_sheet(EXCEL_ALMACEN_ITEM_ID, sheet_name, header, **kwargs)
