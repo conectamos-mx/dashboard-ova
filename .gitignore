@@ -1,0 +1,9 @@
+.env
+*.pyc
+__pycache__/
+backend/token_cache.bin
+.venv/
+venv/
+.vscode/
+.idea/
+*.log

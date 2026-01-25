@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OVA Dashboard - Control de Ventas y Almacén</title>
+    <meta name="description" content="Dashboard de KPIs para control de ventas de huevo y cebolla">
+    <link rel="stylesheet" href="/static/styles.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+    <div class="app">
+        <!-- Header -->
+        <header class="header">
+            <div class="header-content">
+                <div class="logo">
+                    <div class="logo-icon">🥚</div>
+                    <div class="logo-text">
+                        <h1>OVA Dashboard</h1>
+                        <span class="subtitle">Control de Ventas y Almacén</span>
+                    </div>
+                </div>
+                <div class="date-filter">
+                    <div class="filter-group">
+                        <label for="start-date">Desde</label>
+                        <input type="date" id="start-date">
+                    </div>
+                    <div class="filter-group">
+                        <label for="end-date">Hasta</label>
+                        <input type="date" id="end-date">
+                    </div>
+                    <button id="filter-btn" class="btn-primary">Filtrar</button>
+                    <button id="reset-btn" class="btn-secondary">Reiniciar</button>
+                </div>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- KPI Cards Row 1 - Ventas y Compras -->
+            <section class="kpi-section">
+                <div class="kpi-grid">
+                    <!-- Ventas Totales -->
+                    <div class="kpi-card kpi-primary">
+                        <div class="kpi-icon">💰</div>
+                        <div class="kpi-content">
+                            <span class="kpi-label">Ventas Totales</span>
+                            <span class="kpi-value" id="ventas-total">$0</span>
+                            <span class="kpi-detail" id="num-ventas">0 transacciones</span>
+                        </div>
+                    </div>
+
+                    <!-- Ventas Contado -->
+                    <div class="kpi-card kpi-success">
+                        <div class="kpi-icon">💵</div>
+                        <div class="kpi-content">
+                            <span class="kpi-label">Ventas al Contado</span>
+                            <span class="kpi-value" id="ventas-contado">$0</span>
+                            <span class="kpi-detail kpi-badge badge-success">Efectivo</span>
+                        </div>
+                    </div>
+
+                    <!-- Ventas Crédito -->
+                    <div class="kpi-card kpi-warning">
+                        <div class="kpi-icon">📝</div>
+                        <div class="kpi-content">
+                            <span class="kpi-label">Ventas a Crédito</span>
+                            <span class="kpi-value" id="ventas-credito">$0</span>
+                            <span class="kpi-detail kpi-badge badge-warning">Pendiente cobro</span>
+                        </div>
+                    </div>
+
+                    <!-- Compras -->
+                    <div class="kpi-card kpi-danger">
+                        <div class="kpi-icon">🛒</div>
+                        <div class="kpi-content">
+                            <span class="kpi-label">Compras Totales</span>
+                            <span class="kpi-value" id="compras-total">$0</span>
+                            <span class="kpi-detail" id="num-compras">0 compras</span>
+                        </div>
+                    </div>
+
+                    <!-- Gastos -->
+                    <div class="kpi-card kpi-orange">
+                        <div class="kpi-icon">💸</div>
+                        <div class="kpi-content">
+                            <span class="kpi-label">Gastos Operativos</span>
+                            <span class="kpi-value" id="gastos-total">$0</span>
+                            <span class="kpi-detail" id="num-gastos">0 gastos</span>
+                        </div>
+                    </div>
+
+
+                </div>
+            </section>
+
+            <!-- KPI Cards Row 2 - Stock e Indicadores -->
+            <section class="kpi-section">
+                <div class="kpi-grid">
+                    <!-- Stock Cebolla -->
+                    <div class="kpi-card kpi-stock-cebolla">
+                        <div class="kpi-icon">🧅</div>
+                        <div class="kpi-content">
+                            <span class="kpi-label">Stock Cebolla</span>
+                            <span class="kpi-value" id="stock-cebolla">0 kg</span>
+                            <span class="kpi-detail">Existencia actual</span>
+                        </div>
+                    </div>
+
+                    <!-- Stock Huevo -->
+                    <div class="kpi-card kpi-stock-huevo">
+                        <div class="kpi-icon">🥚</div>
+                        <div class="kpi-content">
+                            <span class="kpi-label">Stock Huevo</span>
+                            <span class="kpi-value" id="stock-huevo">0 kg</span>
+                            <span class="kpi-detail">Existencia actual</span>
+                        </div>
+                    </div>
+
+                    <!-- Ticket Promedio -->
+                    <div class="kpi-card kpi-secondary">
+                        <div class="kpi-icon">🧾</div>
+                        <div class="kpi-content">
+                            <span class="kpi-label">Ticket Promedio</span>
+                            <span class="kpi-value" id="ticket-promedio">$0</span>
+                            <span class="kpi-detail" id="num-tickets">Por transacción</span>
+                        </div>
+                    </div>
+
+
+
+                    <!-- Cuentas por Cobrar -->
+                    <div class="kpi-card kpi-purple">
+                        <div class="kpi-icon">📋</div>
+                        <div class="kpi-content">
+                            <span class="kpi-label">Por Cobrar</span>
+                            <span class="kpi-value" id="por-cobrar">$0</span>
+                            <span class="kpi-detail" id="num-cuentas">0 cuentas</span>
+                        </div>
+                    </div>
+
+                    <!-- Crecimiento Mensual -->
+                    <div class="kpi-card kpi-growth" id="growth-card">
+                        <div class="kpi-icon">📅</div>
+                        <div class="kpi-content">
+                            <span class="kpi-label">vs Mes Anterior</span>
+                            <span class="kpi-value" id="crecimiento">0%</span>
+                            <span class="kpi-detail" id="mes-anterior-detail">Comparativo</span>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Charts Section -->
+            <section class="charts-section">
+                <div class="charts-grid">
+                    <!-- Top Productos Más Vendidos -->
+                    <div class="chart-card">
+                        <div class="chart-header">
+                            <h3>🏆 Top 5 Productos Más Vendidos</h3>
+                        </div>
+                        <div class="chart-body">
+                            <table id="table-top-products" class="top-products-table">
+                                <thead>
+                                    <tr>
+                                        <th>#</th>
+                                        <th>Producto</th>
+                                        <th>Monto</th>
+                                        <th>Cantidad</th>
+                                    </tr>
+                                </thead>
+                                <tbody></tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- Ventas por Segmento -->
+                    <div class="chart-card">
+                        <div class="chart-header">
+                            <h3>Ventas por Segmento</h3>
+                        </div>
+                        <div class="chart-body">
+                            <canvas id="chart-by-product"></canvas>
+                        </div>
+                    </div>
+
+                    <!-- Top Clientes (Moved right after Segmento) -->
+                    <div class="chart-card">
+                        <div class="chart-header">
+                            <h3>🏆 Top 10 Clientes</h3>
+                        </div>
+                        <div class="chart-body table-body">
+                            <table id="table-clients">
+                                <thead>
+                                    <tr>
+                                        <th>#</th>
+                                        <th>Cliente</th>
+                                        <th>Total</th>
+                                        <th>Compras</th>
+                                    </tr>
+                                </thead>
+                                <tbody></tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- Cuentas por Cobrar (Moved right after Clientes) -->
+                    <div class="chart-card">
+                        <div class="chart-header">
+                            <h3>⏳ Cuentas por Cobrar</h3>
+                        </div>
+                        <div class="chart-body table-body">
+                            <table id="table-receivables">
+                                <thead>
+                                    <tr>
+                                        <th>Cliente</th>
+                                        <th>Saldo</th>
+                                        <th>Fecha</th>
+                                        <th>Días</th>
+                                    </tr>
+                                </thead>
+                                <tbody></tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- Tendencia de Ventas -->
+                    <div class="chart-card chart-wide">
+                        <div class="chart-header">
+                            <h3>Tendencia de Ventas</h3>
+                        </div>
+                        <div class="chart-body">
+                            <canvas id="chart-trend"></canvas>
+                        </div>
+                    </div>
+
+                    <!-- Ventas por Día de Semana -->
+                    <div class="chart-card">
+                        <div class="chart-header">
+                            <h3>Ventas por Día de Semana</h3>
+                        </div>
+                        <div class="chart-body">
+                            <canvas id="chart-by-weekday"></canvas>
+                        </div>
+                    </div>
+
+                    <!-- Distribución del Valor de Ticket -->
+                    <div class="chart-card">
+                        <div class="chart-header">
+                            <h3>Distribución del Valor de Ticket</h3>
+                        </div>
+                        <div class="chart-body">
+                            <canvas id="chart-ticket-distribution"></canvas>
+                        </div>
+                    </div>
+
+                    <!-- Compras por Producto -->
+                    <div class="chart-card">
+                        <div class="chart-header">
+                            <h3>Compras por Producto</h3>
+                        </div>
+                        <div class="chart-body">
+                            <canvas id="chart-purchases"></canvas>
+                        </div>
+                    </div>
+
+                    <!-- Gastos por Tipo -->
+                    <div class="chart-card">
+                        <div class="chart-header">
+                            <h3>Gastos por Categoría</h3>
+                        </div>
+                        <div class="chart-body">
+                            <canvas id="chart-expenses"></canvas>
+                        </div>
+                    </div>
+
+                </div>
+            </section>
+        </main>
+
+        <!-- Footer -->
+        <footer class="footer">
+            <p>OVA Dashboard &copy; 2026 | Datos actualizados desde Excel</p>
+        </footer>
+    </div>
+
+    <!-- Loading Overlay -->
+    <div class="loading-overlay" id="loading">
+        <div class="spinner"></div>
+        <p>Cargando datos...</p>
+    </div>
+
+    <script src="/static/app.js"></script>
+</body>
+</html>
