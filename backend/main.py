@@ -15,16 +15,30 @@ from typing import Optional
 import os
 
 # Importar funciones de carga de datos
-from data_loader import (
-    load_ventas_contado as _load_ventas_contado,
-    load_ventas_credito as _load_ventas_credito,
-    load_compras_cebolla as _load_compras_cebolla,
-    load_compras_huevo as _load_compras_huevo,
-    load_egresos as _load_egresos,
-    load_stock_almacen_cebolla,
-    load_stock_almacen_huevo,
-    get_data_source_info
-)
+# Importar funciones de carga de datos
+# Intentar import relativo (para Render) o directo (local)
+try:
+    from backend.data_loader import (
+        load_ventas_contado as _load_ventas_contado,
+        load_ventas_credito as _load_ventas_credito,
+        load_compras_cebolla as _load_compras_cebolla,
+        load_compras_huevo as _load_compras_huevo,
+        load_egresos as _load_egresos,
+        load_stock_almacen_cebolla,
+        load_stock_almacen_huevo,
+        get_data_source_info
+    )
+except ImportError:
+    from data_loader import (
+        load_ventas_contado as _load_ventas_contado,
+        load_ventas_credito as _load_ventas_credito,
+        load_compras_cebolla as _load_compras_cebolla,
+        load_compras_huevo as _load_compras_huevo,
+        load_egresos as _load_egresos,
+        load_stock_almacen_cebolla,
+        load_stock_almacen_huevo,
+        get_data_source_info
+    )
 
 app = FastAPI(title="OVA Dashboard API", version="2.0.0")
 
