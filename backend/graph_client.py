@@ -69,8 +69,9 @@ def get_msal_app():
 def get_access_token() -> str:
     """
     Obtiene un token de acceso válido.
-    Intenta obtenerlo silenciosamente del caché (usando refresh token si es necesario).
-    Si falla, intenta usar el token manual del .env.
+    1. Intenta silenciosamente via caché local (dev).
+    2. Intenta usar REFRESH TOKEN via variable de entorno (prod/render).
+    3. Intenta usar token estático (emergencia).
     """
     app, save_cache = get_msal_app()
     
@@ -82,16 +83,25 @@ def get_access_token() -> str:
             save_cache()
             return result['access_token']
     
-    # 2. Fallback: Recargar variables de entorno para intentar token manual
-    load_dotenv(override=True)
-    token = os.getenv('MICROSOFT_ACCESS_TOKEN', '')
+    # 2. Estrategia Producción (Render): Usar Refresh Token inyectado
+    refresh_token = os.getenv('MICROSOFT_REFRESH_TOKEN')
+    if refresh_token:
+        # Intentar canjear refresh token por uno nuevo de acceso
+        result = app.acquire_token_by_refresh_token(refresh_token, scopes=SCOPES)
+        if result and 'access_token' in result:
+            # Opcional: imprimir algo en logs para debug
+            # print("Token refrescado exitosamente usando env var")
+            return result['access_token']
     
-    if not token:
-        raise GraphAPIError(
-            "Sesión expirada o token no encontrado. "
-            "Por favor, ejecuta 'python backend/setup_onedrive_msal.py' para autenticarte nuevamente."
-        )
-    return token
+    # 3. Fallback: Token manual estático
+    token = os.getenv('MICROSOFT_ACCESS_TOKEN', '')
+    if token:
+        return token
+
+    raise GraphAPIError(
+        "No se pudo autenticar. En Render, asegura configurar MICROSOFT_REFRESH_TOKEN. "
+        "En local, ejecuta 'python backend/setup_onedrive_msal.py'."
+    )
 
 
 def download_excel_file(item_id: str, cache_minutes: int = 30) -> bytes:
