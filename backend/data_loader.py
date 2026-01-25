@@ -78,27 +78,39 @@ def load_excel_sheet(
 # Funciones de conveniencia
 def load_ventas_contado() -> pd.DataFrame:
     """Carga ventas al contado"""
-    return load_excel_sheet('ventas', 'VENTAS AL CONTADO', header=7)
+    cols = ['SEGMENTO DE NEGOCIO', 'TIPO DE VENTA', 'TIPO/PRODUCTO', 'CLIENTE ADMON', 
+            'KG NETOS', 'CAJAS/BULTOS', 'PRECIO', 'TOTAL VENTA', 'FORMA DE PAGO', 
+            'OPERADOR', 'FECHA', 'ID']
+    return load_excel_sheet('ventas', 'VENTAS AL CONTADO', header=7, usecols=cols)
 
 
 def load_ventas_credito() -> pd.DataFrame:
     """Carga ventas a crédito"""
-    return load_excel_sheet('ventas', 'VENTAS A CRÉDITO', header=7)
+    cols = ['SEGMENTO DE NEGOCIO', 'TIPO DE VENTA', 'TIPO/PRODUCTO', 'CLIENTE ADMON', 
+            'KG NETOS', 'CAJAS O BULTOS', 'PRECIO UNITARIO', 'TOTAL VENTA', 
+            'OPERADOR', 'FECHA', 'SALDO', 'ID']
+    return load_excel_sheet('ventas', 'VENTAS A CRÉDITO', header=7, usecols=cols)
 
 
 def load_compras_cebolla() -> pd.DataFrame:
     """Carga compras de cebolla"""
-    return load_excel_sheet('almacen', 'COMPRAS (C)', header=9)
+    cols = ['FECHA', 'PROVEEDOR DE CEBOLLA', 'COSTALES', 'KG NETOS', 'PRECIO X KG', 
+            'TOTAL', 'ESTATUS', 'ID']
+    return load_excel_sheet('almacen', 'COMPRAS (C)', header=9, usecols=cols)
 
 
 def load_compras_huevo() -> pd.DataFrame:
     """Carga compras de huevo"""
-    return load_excel_sheet('almacen', 'COMPRAS (H)', header=9)
+    cols = ['FECHA', 'PROVEEDOR DE HUEVO', 'CAJAS', 'KG NETOS', 'PRECIO x KG', 
+            'TOTAL', 'ESTATUS', 'MARCA DE HUEVO', 'ID']
+    return load_excel_sheet('almacen', 'COMPRAS (H)', header=9, usecols=cols)
 
 
 def load_egresos() -> pd.DataFrame:
     """Carga egresos/gastos"""
-    return load_excel_sheet('ventas', 'EGRESOS EN EFECTIVO', header=8)
+    cols = ['ID', 'FECHA', 'TIPO DE EGRESO', 'CENTRO DE COSTOS', 'CONCEPTO', 
+            'IMPORTE', 'OPERADOR', 'CLASIFICACIÓN COSTO/GASTO']
+    return load_excel_sheet('ventas', 'EGRESOS EN EFECTIVO', header=8, usecols=cols)
 
 
 def load_stock_almacen_cebolla() -> pd.DataFrame:

@@ -33,6 +33,7 @@ ACCESS_TOKEN = os.getenv('MICROSOFT_ACCESS_TOKEN', '')
 
 # Caché de archivos
 _file_cache = {}
+_df_cache = {}
 
 
 class GraphAPIError(Exception):
@@ -157,6 +158,16 @@ def read_excel_sheet(item_id: str, sheet_name: str, header: int = 0, **kwargs) -
     Returns:
         DataFrame con los datos de la hoja
     """
+    # 1. Verificar Cache de Dataframe
+    # Usamos todas las variables que afectan la salida como llave
+    cache_key = f"{item_id}|{sheet_name}|{header}|{str(kwargs)}"
+    
+    if cache_key in _df_cache:
+        df, cached_time = _df_cache[cache_key]
+        if datetime.now() - cached_time < timedelta(minutes=30):
+            # Retornamos una copia para evitar mutaciones accidentales en el cache
+            return df.copy()
+            
     try:
         file_content = download_excel_file(item_id)
         
@@ -164,16 +175,20 @@ def read_excel_sheet(item_id: str, sheet_name: str, header: int = 0, **kwargs) -
         excel_file = io.BytesIO(file_content)
         df = pd.read_excel(excel_file, sheet_name=sheet_name, header=header, **kwargs)
         
-        return df
+        # Guardar en caché de DFs
+        _df_cache[cache_key] = (df, datetime.now())
+        
+        return df.copy()
     
     except Exception as e:
         raise GraphAPIError(f"Error leyendo hoja '{sheet_name}' del archivo {item_id}: {str(e)}")
 
 
 def clear_cache():
-    """Limpia el caché de archivos"""
-    global _file_cache
+    """Limpia el caché de archivos y dataframes"""
+    global _file_cache, _df_cache
     _file_cache = {}
+    _df_cache = {}
 
 
 def get_file_info(item_id: str) -> Dict[str, Any]:
