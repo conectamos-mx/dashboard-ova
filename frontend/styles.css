@@ -149,9 +149,13 @@ body::before {
   gap: var(--spacing-md);
 }
 
-.logo-icon {
-  font-size: 2.5rem;
+.logo-img {
+  width: 50px;
+  height: 50px;
+  object-fit: cover;
+  border-radius: 8px;
   animation: float 3s ease-in-out infinite;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
 }
 
 @keyframes float {
@@ -721,7 +725,8 @@ tr:hover td {
     height: 250px;
   }
 
-  table th, table td {
+  table th,
+  table td {
     padding: var(--spacing-xs) var(--spacing-sm);
     font-size: 0.75rem;
     white-space: nowrap; /* Evita que el texto se rompa en tablas */
