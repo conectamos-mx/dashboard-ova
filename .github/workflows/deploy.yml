@@ -1,0 +1,113 @@
+name: Deploy Dashboard OVA
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+env:
+  PROJECT_ID: conectamos-ai
+  REGION: us-central1
+  SERVICE_NAME: dashboard-ova
+  REGISTRY: us-central1-docker.pkg.dev
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: read
+      id-token: write
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ secrets.WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ secrets.SERVICE_ACCOUNT_EMAIL }}
+
+      - name: Set up Cloud SDK
+        uses: google-github-actions/setup-gcloud@v2
+
+      - name: Configure Docker for Artifact Registry
+        run: gcloud auth configure-docker ${{ env.REGISTRY }} --quiet
+
+      - name: Build and Push Docker image
+        run: |
+          docker build -t ${{ env.REGISTRY }}/${{ env.PROJECT_ID }}/${{ env.SERVICE_NAME }}/api:${{ github.sha }} .
+          docker build -t ${{ env.REGISTRY }}/${{ env.PROJECT_ID }}/${{ env.SERVICE_NAME }}/api:latest .
+          docker push ${{ env.REGISTRY }}/${{ env.PROJECT_ID }}/${{ env.SERVICE_NAME }}/api:${{ github.sha }}
+          docker push ${{ env.REGISTRY }}/${{ env.PROJECT_ID }}/${{ env.SERVICE_NAME }}/api:latest
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          cli_config_credentials_token: ${{ secrets.TF_API_TOKEN }}
+
+      - name: Terraform Init
+        working-directory: terraform
+        run: terraform init
+
+      - name: Terraform Plan
+        working-directory: terraform
+        env:
+          TF_VAR_project_id: conectamos-ai
+          TF_VAR_region: us-central1
+          TF_VAR_service_name: dashboard-ova
+          TF_VAR_docker_image: ${{ env.REGISTRY }}/${{ env.PROJECT_ID }}/${{ env.SERVICE_NAME }}/api:${{ github.sha }}
+          TF_VAR_service_memory: "512Mi"
+          TF_VAR_service_cpu: "1"
+          TF_VAR_min_instances: "1"
+          TF_VAR_max_instances: "10"
+          TF_VAR_cpu_idle: "false"
+          TF_VAR_timeout_seconds: "300"
+          TF_VAR_allow_public_access: "true"
+          TF_VAR_app_env: production
+          TF_VAR_microsoft_client_id: ${{ secrets.MICROSOFT_CLIENT_ID }}
+          TF_VAR_microsoft_client_secret: ${{ secrets.MICROSOFT_CLIENT_SECRET }}
+          TF_VAR_microsoft_tenant_id: ${{ secrets.MICROSOFT_TENANT_ID }}
+          TF_VAR_microsoft_access_token: ${{ secrets.MICROSOFT_ACCESS_TOKEN }}
+          TF_VAR_microsoft_refresh_token: ${{ secrets.MICROSOFT_REFRESH_TOKEN }}
+          TF_VAR_microsoft_drive_id: ${{ secrets.MICROSOFT_DRIVE_ID }}
+          TF_VAR_excel_almacen_item_id: ${{ secrets.EXCEL_ALMACEN_ITEM_ID }}
+          TF_VAR_excel_ventas_item_id: ${{ secrets.EXCEL_VENTAS_ITEM_ID }}
+          TF_VAR_use_onedrive: "true"
+          TF_VAR_python_version: "3.12"
+        run: terraform plan -out=tfplan
+
+      - name: Terraform Apply
+        working-directory: terraform
+        env:
+          TF_VAR_project_id: conectamos-ai
+          TF_VAR_region: us-central1
+          TF_VAR_service_name: dashboard-ova
+          TF_VAR_docker_image: ${{ env.REGISTRY }}/${{ env.PROJECT_ID }}/${{ env.SERVICE_NAME }}/api:${{ github.sha }}
+          TF_VAR_service_memory: "512Mi"
+          TF_VAR_service_cpu: "1"
+          TF_VAR_min_instances: "1"
+          TF_VAR_max_instances: "10"
+          TF_VAR_cpu_idle: "false"
+          TF_VAR_timeout_seconds: "300"
+          TF_VAR_allow_public_access: "true"
+          TF_VAR_app_env: production
+          TF_VAR_microsoft_client_id: ${{ secrets.MICROSOFT_CLIENT_ID }}
+          TF_VAR_microsoft_client_secret: ${{ secrets.MICROSOFT_CLIENT_SECRET }}
+          TF_VAR_microsoft_tenant_id: ${{ secrets.MICROSOFT_TENANT_ID }}
+          TF_VAR_microsoft_access_token: ${{ secrets.MICROSOFT_ACCESS_TOKEN }}
+          TF_VAR_microsoft_refresh_token: ${{ secrets.MICROSOFT_REFRESH_TOKEN }}
+          TF_VAR_microsoft_drive_id: ${{ secrets.MICROSOFT_DRIVE_ID }}
+          TF_VAR_excel_almacen_item_id: ${{ secrets.EXCEL_ALMACEN_ITEM_ID }}
+          TF_VAR_excel_ventas_item_id: ${{ secrets.EXCEL_VENTAS_ITEM_ID }}
+          TF_VAR_use_onedrive: "true"
+          TF_VAR_python_version: "3.12"
+        run: terraform apply -auto-approve tfplan
+
+      - name: Get Service URL
+        working-directory: terraform
+        run: |
+          echo "Service URL:"
+          terraform output -raw service_url

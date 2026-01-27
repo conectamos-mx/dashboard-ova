@@ -1,0 +1,23 @@
+.git
+.github
+.gitignore
+.env
+*.log
+*.md
+__pycache__
+*.pyc
+*.pyo
+.venv
+venv
+.vscode
+.idea
+
+# Backend
+backend/token.txt
+backend/token_cache.bin
+backend/test_*.py
+backend/check_*.py
+terraform/
+
+# Frontend
+frontend/.env*

@@ -242,8 +242,11 @@ def filter_by_date(df: pd.DataFrame, start_date: Optional[date], end_date: Optio
 
 @app.get("/")
 async def root():
-    """Sirve el frontend"""
-    return FileResponse(str(FRONTEND_DIR / "index.html"))
+    """Health check o sirve frontend si existe"""
+    index_file = FRONTEND_DIR / "index.html"
+    if index_file.exists():
+        return FileResponse(str(index_file))
+    return {"status": "ok", "service": "dashboard-ova-api"}
 
 
 @app.get("/api/summary")
