@@ -237,6 +237,69 @@
               </div>
             </div>
 
+            <!-- Estado de Cajas -->
+            <div class="chart-card chart-wide">
+              <div class="chart-header">
+                <h3>💵 Estado de Cajas</h3>
+                <span class="cash-date-indicator" id="cash-date-indicator">Cargando...</span>
+              </div>
+              <div class="chart-body">
+                <div class="cash-status-container">
+                  <!-- Saldos por operador -->
+                  <div class="cash-operators">
+                    <div class="cash-operator-card" id="cash-pipo">
+                      <div class="operator-name">PIPO</div>
+                      <div class="operator-balance">$0.00</div>
+                    </div>
+                    <div class="cash-operator-card" id="cash-richard">
+                      <div class="operator-name">RICHARD</div>
+                      <div class="operator-balance">$0.00</div>
+                    </div>
+                    <div class="cash-operator-card" id="cash-bodega">
+                      <div class="operator-name">BODEGA 55</div>
+                      <div class="operator-balance">$0.00</div>
+                    </div>
+                    <div class="cash-operator-card" id="cash-diego">
+                      <div class="operator-name">DIEGO Y EMILIO</div>
+                      <div class="operator-balance">$0.00</div>
+                    </div>
+                  </div>
+
+                  <!-- Movimientos del día -->
+                  <div class="cash-movements">
+                    <div class="movement-section">
+                      <h4>Entradas de Efectivo</h4>
+                      <div class="movement-item">
+                        <span>Cobranza Contado:</span>
+                        <span id="mov-cobranza-contado">$0.00</span>
+                      </div>
+                      <div class="movement-item">
+                        <span>Cobranza Crédito:</span>
+                        <span id="mov-cobranza-credito">$0.00</span>
+                      </div>
+                    </div>
+                    <div class="movement-section">
+                      <h4>Salidas de Efectivo</h4>
+                      <div class="movement-item">
+                        <span>Gastos Efectuados:</span>
+                        <span id="mov-gastos">$0.00</span>
+                      </div>
+                      <div class="movement-item">
+                        <span>Movimiento Entre Cajas:</span>
+                        <span id="mov-entre-cajas">$0.00</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- Saldo total -->
+                  <div class="cash-total">
+                    <div class="total-label">Saldo Total de Efectivo:</div>
+                    <div class="total-value" id="cash-total">$0.00</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
             <!-- Tendencia de Ventas -->
             <div class="chart-card chart-wide">
               <div class="chart-header">
@@ -293,6 +356,9 @@
       <!-- Footer -->
       <footer class="footer">
         <p>OVA Dashboard &copy; 2026 | Datos actualizados desde Excel</p>
+        <p class="footer-powered">
+          Powered by <a href="https://conectamos.ai" target="_blank" rel="noopener noreferrer" class="footer-link">conectamos.ai</a>
+        </p>
       </footer>
     </div>
 

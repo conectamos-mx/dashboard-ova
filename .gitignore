@@ -9,6 +9,8 @@ venv/
 .vscode/
 .idea/
 *.log
+.claude/
+nul
 
 # Terraform
 terraform/.terraform/

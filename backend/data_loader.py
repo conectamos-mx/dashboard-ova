@@ -22,10 +22,10 @@ if USE_ONEDRIVE:
             from backend.graph_client import read_ventas_sheet, read_almacen_sheet, GraphAPIError
         except ImportError:
             from graph_client import read_ventas_sheet, read_almacen_sheet, GraphAPIError
-        print("✅ Modo OneDrive activado - usando Microsoft Graph API")
+        print("[OK] Modo OneDrive activado - usando Microsoft Graph API")
     except ImportError as e:
-        print(f"⚠️  Error importando graph_client: {e}")
-        print("⚠️  Cayendo a modo local")
+        print(f"[WARNING] Error importando graph_client: {e}")
+        print("[WARNING] Cayendo a modo local")
         USE_ONEDRIVE = False
 
 # Rutas a archivos locales (fallback)
@@ -78,17 +78,17 @@ def load_excel_sheet(
 # Funciones de conveniencia
 def load_ventas_contado() -> pd.DataFrame:
     """Carga ventas al contado"""
-    cols = ['SEGMENTO DE NEGOCIO', 'TIPO DE VENTA', 'TIPO/PRODUCTO', 'CLIENTE ADMON', 
-            'KG NETOS', 'CAJAS/BULTOS', 'PRECIO', 'TOTAL VENTA', 'FORMA DE PAGO', 
-            'OPERADOR', 'FECHA', 'ID']
+    cols = ['SEGMENTO DE NEGOCIO', 'TIPO DE VENTA', 'TIPO/PRODUCTO', 'CLIENTE ADMON',
+            'KG NETOS', 'CAJAS/BULTOS', 'PRECIO', 'TOTAL VENTA', 'FORMA DE PAGO',
+            'OPERADOR', 'FECHA', 'NOTA', 'ID']
     return load_excel_sheet('ventas', 'VENTAS AL CONTADO', header=7, usecols=cols)
 
 
 def load_ventas_credito() -> pd.DataFrame:
     """Carga ventas a crédito"""
-    cols = ['SEGMENTO DE NEGOCIO', 'TIPO DE VENTA', 'TIPO/PRODUCTO', 'CLIENTE ADMON', 
-            'KG NETOS', 'CAJAS O BULTOS', 'PRECIO UNITARIO', 'TOTAL VENTA', 
-            'OPERADOR', 'FECHA', 'SALDO', 'ID']
+    cols = ['SEGMENTO DE NEGOCIO', 'TIPO DE VENTA', 'TIPO/PRODUCTO', 'CLIENTE ADMON',
+            'KG NETOS', 'CAJAS O BULTOS', 'PRECIO UNITARIO', 'TOTAL VENTA',
+            'OPERADOR', 'FECHA', 'SALDO', 'NOTA (SI APLICA)', 'ID']
     return load_excel_sheet('ventas', 'VENTAS A CRÉDITO', header=7, usecols=cols)
 
 
@@ -121,6 +121,14 @@ def load_stock_almacen_cebolla() -> pd.DataFrame:
 def load_stock_almacen_huevo() -> pd.DataFrame:
     """Carga control de almacén de huevo"""
     return load_excel_sheet('almacen', 'CONTROL DE ALMACÉN (H)', header=9)
+
+
+def load_cajas() -> pd.DataFrame:
+    """Carga la hoja de control de cajas por operador"""
+    cols = ['SEMANA', 'FECHA', 'CONCEPTO', 'PIPO', 'RICHARD', 'BODEGA 55',
+            'DIEGO Y EMILIO', 'OTRAS ENTRADAS DE EFECTIVO (+)',
+            'OTRAS SALIDAS DE EFECTIVO (-)', 'SALDO FINAL DE EFECTIVO', 'NOTA']
+    return load_excel_sheet('ventas', 'CAJAS', header=4, usecols=cols)
 
 
 def get_data_source_info() -> dict:

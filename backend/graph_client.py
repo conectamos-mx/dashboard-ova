@@ -105,7 +105,7 @@ def get_access_token() -> str:
     )
 
 
-def download_excel_file(item_id: str, cache_minutes: int = 30) -> bytes:
+def download_excel_file(item_id: str, cache_minutes: int = 2) -> bytes:
     """
     Descarga un archivo Excel desde OneDrive personal
     
@@ -164,7 +164,7 @@ def read_excel_sheet(item_id: str, sheet_name: str, header: int = 0, **kwargs) -
     
     if cache_key in _df_cache:
         df, cached_time = _df_cache[cache_key]
-        if datetime.now() - cached_time < timedelta(minutes=30):
+        if datetime.now() - cached_time < timedelta(minutes=2):
             # Retornamos una copia para evitar mutaciones accidentales en el cache
             return df.copy()
             

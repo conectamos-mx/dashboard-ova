@@ -26,6 +26,7 @@ try:
         load_egresos as _load_egresos,
         load_stock_almacen_cebolla,
         load_stock_almacen_huevo,
+        load_cajas,
         get_data_source_info
     )
 except ImportError:
@@ -37,6 +38,7 @@ except ImportError:
         load_egresos as _load_egresos,
         load_stock_almacen_cebolla,
         load_stock_almacen_huevo,
+        load_cajas,
         get_data_source_info
     )
 
@@ -63,7 +65,7 @@ FRONTEND_DIR = PROJECT_ROOT / "frontend"
 if FRONTEND_DIR.exists():
     app.mount("/static", StaticFiles(directory=str(FRONTEND_DIR)), name="static")
 else:
-    print(f"⚠️  Warning: Frontend directory not found at {FRONTEND_DIR}")
+    print(f"[WARNING] Frontend directory not found at {FRONTEND_DIR}")
 
 
 def parse_date(date_str: Optional[str]) -> Optional[date]:
@@ -91,10 +93,14 @@ def load_ventas_contado() -> pd.DataFrame:
         'TOTAL VENTA': 'total_venta',
         'FORMA DE PAGO': 'forma_pago',
         'OPERADOR': 'operador',
-        'FECHA': 'fecha'
+        'FECHA': 'fecha',
+        'NOTA': 'nota'
     })
     # Filtrar filas válidas (que tengan ID)
     df = df[df['ID'].notna() & df['ID'].astype(str).str.startswith('VC')]
+    # Filtrar ventas anuladas (excluir registros con "ANULADO" en nota)
+    if 'nota' in df.columns:
+        df = df[~df['nota'].astype(str).str.contains('ANULADO', case=False, na=False)]
     df['tipo'] = 'CONTADO'
     return df
 
@@ -113,9 +119,13 @@ def load_ventas_credito() -> pd.DataFrame:
         'TOTAL VENTA': 'total_venta',
         'OPERADOR': 'operador',
         'FECHA': 'fecha',
-        'SALDO': 'saldo'
+        'SALDO': 'saldo',
+        'NOTA (SI APLICA)': 'nota'
     })
     df = df[df['ID'].notna() & df['ID'].astype(str).str.startswith('VCR')]
+    # Filtrar ventas anuladas (excluir registros con "ANULADO" en nota)
+    if 'nota' in df.columns:
+        df = df[~df['nota'].astype(str).str.contains('ANULADO', case=False, na=False)]
     df['tipo'] = 'CREDITO'
     df['forma_pago'] = 'CREDITO'
     return df
@@ -209,16 +219,16 @@ def load_stock_cebolla() -> float:
 
 
 def load_stock_huevo() -> float:
-    """Obtiene el stock actual de huevo en KG"""
+    """Obtiene el stock actual de huevo en CAJAS (columna F)"""
     df = load_stock_almacen_huevo()
-    # Huevo tiene múltiples columnas de existencia, usar solo la última (consolidada)
+    # Huevo tiene múltiples columnas de existencia, usar la PRIMERA (cajas, columna F)
     existencia_cols = [c for c in df.columns if 'EXISTENCIA' in str(c)]
     if existencia_cols:
-        # Usar la última columna de existencia (es la consolidada)
-        last_col = existencia_cols[-1]
-        last_val = df[last_col].dropna()
-        if len(last_val) > 0:
-            return float(last_val.iloc[-1])
+        # Usar la primera columna de existencia (cajas)
+        first_col = existencia_cols[0]
+        first_val = df[first_col].dropna()
+        if len(first_val) > 0:
+            return float(first_val.iloc[-1])
     return 0.0
 
 
@@ -623,18 +633,107 @@ async def get_stock():
     """Stock actual de productos"""
     stock_cebolla = load_stock_cebolla()
     stock_huevo = load_stock_huevo()
-    
+
     return {
         "cebolla": {
             "kg": stock_cebolla,
             "producto": "CEBOLLA"
         },
         "huevo": {
-            "kg": stock_huevo,
+            "cajas": stock_huevo,
             "producto": "HUEVO"
         },
-        "total_kg": stock_cebolla + stock_huevo
+        "total_kg": stock_cebolla
     }
+
+
+@app.get("/api/cash-status")
+async def get_cash_status(
+    start_date: Optional[str] = Query(None),
+    end_date: Optional[str] = Query(None)
+):
+    """Estado de cajas - saldos por operador y movimientos del día"""
+    try:
+        df = load_cajas()
+
+        # Asegurar que FECHA es datetime
+        df['FECHA'] = pd.to_datetime(df['FECHA'], errors='coerce')
+
+        # Aplicar filtro de fechas si se proporcionan
+        end = parse_date(end_date)
+        if end:
+            # Filtrar hasta la fecha final (inclusive)
+            df = df[df['FECHA'].dt.date <= end].copy()
+
+        # Obtener última fecha con datos (FIN DEL DÍA o SALDO INICIAL más reciente)
+        df_fin_dia = df[df['CONCEPTO'].isin(['FIN DEL DÍA', 'SALDO INICIAL'])].copy()
+        df_fin_dia = df_fin_dia.sort_values('FECHA', ascending=False)
+
+        if len(df_fin_dia) == 0:
+            return {
+                "operadores": [],
+                "movimientos_dia": {},
+                "saldo_total": 0,
+                "fecha": None
+            }
+
+        # Obtener saldos de cada operador (última fila con FIN DEL DÍA)
+        ultima_fila = df_fin_dia.iloc[0]
+        operadores = []
+
+        for op_name in ['PIPO', 'RICHARD', 'BODEGA 55', 'DIEGO Y EMILIO']:
+            saldo = pd.to_numeric(ultima_fila[op_name], errors='coerce')
+            if pd.isna(saldo):
+                saldo = 0
+
+            operadores.append({
+                "nombre": op_name,
+                "saldo": float(saldo)
+            })
+
+        # Obtener movimientos del día actual
+        fecha_actual = ultima_fila['FECHA'].date()
+        df_dia = df[df['FECHA'].dt.date == fecha_actual].copy()
+
+        # Calcular totales por concepto
+        movimientos = {}
+        for concepto in ['COBRANZA VENTAS AL CONTADO', 'COBRANZA VENTAS A CRÉDITO',
+                        'GASTOS EFECTUADOS', 'MOVIMIENTO ENTRE CAJAS']:
+            df_concepto = df_dia[df_dia['CONCEPTO'] == concepto]
+            if len(df_concepto) > 0:
+                # Sumar todos los operadores
+                total = 0
+                for op in ['PIPO', 'RICHARD', 'BODEGA 55', 'DIEGO Y EMILIO']:
+                    val = pd.to_numeric(df_concepto[op].iloc[0], errors='coerce')
+                    if pd.notna(val):
+                        total += val
+                movimientos[concepto] = float(total)
+            else:
+                movimientos[concepto] = 0.0
+
+        # Saldo total de efectivo
+        saldo_total = pd.to_numeric(ultima_fila['SALDO FINAL DE EFECTIVO'], errors='coerce')
+        if pd.isna(saldo_total):
+            saldo_total = 0
+
+        return {
+            "operadores": operadores,
+            "movimientos_dia": movimientos,
+            "saldo_total": float(saldo_total),
+            "fecha": fecha_actual.isoformat()
+        }
+
+    except Exception as e:
+        print(f"Error en /api/cash-status: {e}")
+        import traceback
+        traceback.print_exc()
+        return {
+            "operadores": [],
+            "movimientos_dia": {},
+            "saldo_total": 0,
+            "fecha": None,
+            "error": str(e)
+        }
 
 
 @app.get("/api/metrics/ticket-promedio")
@@ -771,7 +870,7 @@ async def get_monthly_comparison():
 async def health_check():
     """Verificación de salud del API y fuente de datos"""
     data_source = get_data_source_info()
-    
+
     return {
         "status": "healthy",
         "version": "2.0.0",
@@ -779,8 +878,36 @@ async def health_check():
     }
 
 
+@app.get("/api/debug/ventas")
+async def debug_ventas():
+    """Endpoint de debug para investigar el conteo de ventas"""
+    contado = load_ventas_contado()
+    credito = load_ventas_credito()
+    todas = load_all_ventas()
+
+    # Ejemplos de IDs de contado
+    ids_contado_sample = contado['ID'].head(10).tolist() if len(contado) > 0 else []
+    # Ejemplos de IDs de crédito
+    ids_credito_sample = credito['ID'].head(10).tolist() if len(credito) > 0 else []
+
+    return {
+        "ventas_contado": {
+            "total_registros": len(contado),
+            "ejemplo_ids": ids_contado_sample,
+            "columnas": contado.columns.tolist() if len(contado) > 0 else []
+        },
+        "ventas_credito": {
+            "total_registros": len(credito),
+            "ejemplo_ids": ids_credito_sample,
+            "columnas": credito.columns.tolist() if len(credito) > 0 else []
+        },
+        "total_combinado": len(todas),
+        "nota": "Comparar estos números con el conteo manual en Excel"
+    }
+
+
 if __name__ == "__main__":
     import uvicorn
     import os
-    port = int(os.environ.get("PORT", 8000))
+    port = int(os.environ.get("PORT", 8005))
     uvicorn.run(app, host="0.0.0.0", port=port)

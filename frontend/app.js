@@ -67,8 +67,8 @@ function formatDateForAPI(date) {
 
 function formatCurrency(value) {
     if (value === null || value === undefined || isNaN(value)) return '$0';
-    // Usamos es-ES para formato 1.000,00 pero añadimos el $ manual para evitar MXN
-    const formatted = new Intl.NumberFormat('es-ES', {
+    // Usamos es-MX para formato mexicano: 1,234.56 (coma miles, punto decimales)
+    const formatted = new Intl.NumberFormat('es-MX', {
         minimumFractionDigits: 2,
         maximumFractionDigits: 2
     }).format(value);
@@ -77,15 +77,23 @@ function formatCurrency(value) {
 
 function formatNumber(value) {
     if (value === null || value === undefined || isNaN(value)) return '0';
-    return new Intl.NumberFormat('es-ES').format(value);
+    return new Intl.NumberFormat('es-MX').format(value);
 }
 
 function formatKG(value) {
     if (value === null || value === undefined || isNaN(value)) return '0 kg';
-    return new Intl.NumberFormat('es-ES', {
+    return new Intl.NumberFormat('es-MX', {
         minimumFractionDigits: 0,
         maximumFractionDigits: 0
     }).format(value) + ' kg';
+}
+
+function formatCajas(value) {
+    if (value === null || value === undefined || isNaN(value)) return '0 cajas';
+    return new Intl.NumberFormat('es-MX', {
+        minimumFractionDigits: 0,
+        maximumFractionDigits: 0
+    }).format(value) + ' cajas';
 }
 
 function formatPercent(value) {
@@ -148,7 +156,8 @@ async function loadAllData() {
             loadPurchases(),
             loadExpenses(),
             loadTopClients(),
-            loadReceivables()
+            loadReceivables(),
+            loadCashStatus()
         ]);
     } catch (error) {
         console.error('Error loading data:', error);
@@ -175,9 +184,74 @@ async function loadSummary() {
 async function loadStock() {
     const data = await fetchAPI('/api/stock', false);
     if (!data) return;
-    
+
     document.getElementById('stock-cebolla').textContent = formatKG(data.cebolla?.kg || 0);
-    document.getElementById('stock-huevo').textContent = formatKG(data.huevo?.kg || 0);
+    document.getElementById('stock-huevo').textContent = formatCajas(data.huevo?.cajas || 0);
+}
+
+async function loadCashStatus() {
+    const data = await fetchAPI('/api/cash-status', true);  // Respetar filtro de fechas
+    if (!data || !data.operadores) return;
+
+    // Actualizar saldos por operador
+    data.operadores.forEach(op => {
+        let cardId = '';
+        if (op.nombre === 'PIPO') cardId = 'cash-pipo';
+        else if (op.nombre === 'RICHARD') cardId = 'cash-richard';
+        else if (op.nombre === 'BODEGA 55') cardId = 'cash-bodega';
+        else if (op.nombre === 'DIEGO Y EMILIO') cardId = 'cash-diego';
+
+        if (cardId) {
+            const card = document.getElementById(cardId);
+            const balanceEl = card.querySelector('.operator-balance');
+            balanceEl.textContent = formatCurrency(op.saldo);
+
+            // Agregar clase 'negative' si el saldo es negativo
+            if (op.saldo < 0) {
+                card.classList.add('negative');
+            } else {
+                card.classList.remove('negative');
+            }
+        }
+    });
+
+    // Actualizar movimientos del día
+    if (data.movimientos_dia) {
+        const mov = data.movimientos_dia;
+        document.getElementById('mov-cobranza-contado').textContent =
+            formatCurrency(mov['COBRANZA VENTAS AL CONTADO'] || 0);
+        document.getElementById('mov-cobranza-credito').textContent =
+            formatCurrency(mov['COBRANZA VENTAS A CRÉDITO'] || 0);
+        document.getElementById('mov-gastos').textContent =
+            formatCurrency(mov['GASTOS EFECTUADOS'] || 0);
+        document.getElementById('mov-entre-cajas').textContent =
+            formatCurrency(mov['MOVIMIENTO ENTRE CAJAS'] || 0);
+    }
+
+    // Actualizar saldo total
+    const totalEl = document.getElementById('cash-total');
+    const totalContainer = totalEl.parentElement;
+    totalEl.textContent = formatCurrency(data.saldo_total);
+
+    // Agregar clase 'negative' y 'deficit' si el saldo es negativo
+    if (data.saldo_total < 0) {
+        totalEl.classList.add('negative');
+        totalContainer.classList.add('deficit');
+    } else {
+        totalEl.classList.remove('negative');
+        totalContainer.classList.remove('deficit');
+    }
+
+    // Actualizar indicador de fecha
+    if (data.fecha) {
+        const fechaObj = new Date(data.fecha + 'T00:00:00');
+        const fechaFormateada = fechaObj.toLocaleDateString('es-MX', {
+            day: '2-digit',
+            month: 'short',
+            year: 'numeric'
+        });
+        document.getElementById('cash-date-indicator').textContent = `Datos del ${fechaFormateada}`;
+    }
 }
 
 async function loadTicketPromedio() {
