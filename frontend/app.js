@@ -196,10 +196,10 @@ async function loadCashStatus() {
     // Actualizar saldos por operador
     data.operadores.forEach(op => {
         let cardId = '';
-        if (op.nombre === 'PIPO') cardId = 'cash-pipo';
+        if (op.nombre === 'EMILIO') cardId = 'cash-pipo';
         else if (op.nombre === 'RICHARD') cardId = 'cash-richard';
         else if (op.nombre === 'BODEGA 55') cardId = 'cash-bodega';
-        else if (op.nombre === 'DIEGO Y EMILIO') cardId = 'cash-diego';
+        else if (op.nombre === 'DIEGO') cardId = 'cash-diego';
 
         if (cardId) {
             const card = document.getElementById(cardId);

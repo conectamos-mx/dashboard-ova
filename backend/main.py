@@ -681,7 +681,7 @@ async def get_cash_status(
         ultima_fila = df_fin_dia.iloc[0]
         operadores = []
 
-        for op_name in ['PIPO', 'RICHARD', 'BODEGA 55', 'DIEGO Y EMILIO']:
+        for op_name in ['EMILIO', 'RICHARD', 'BODEGA 55', 'DIEGO']:
             saldo = pd.to_numeric(ultima_fila[op_name], errors='coerce')
             if pd.isna(saldo):
                 saldo = 0
@@ -703,7 +703,7 @@ async def get_cash_status(
             if len(df_concepto) > 0:
                 # Sumar todos los operadores
                 total = 0
-                for op in ['PIPO', 'RICHARD', 'BODEGA 55', 'DIEGO Y EMILIO']:
+                for op in ['EMILIO', 'RICHARD', 'BODEGA 55', 'DIEGO']:
                     val = pd.to_numeric(df_concepto[op].iloc[0], errors='coerce')
                     if pd.notna(val):
                         total += val

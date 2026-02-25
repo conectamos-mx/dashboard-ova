@@ -125,8 +125,8 @@ def load_stock_almacen_huevo() -> pd.DataFrame:
 
 def load_cajas() -> pd.DataFrame:
     """Carga la hoja de control de cajas por operador"""
-    cols = ['SEMANA', 'FECHA', 'CONCEPTO', 'PIPO', 'RICHARD', 'BODEGA 55',
-            'DIEGO Y EMILIO', 'OTRAS ENTRADAS DE EFECTIVO (+)',
+    cols = ['SEMANA', 'FECHA', 'CONCEPTO', 'EMILIO', 'RICHARD', 'BODEGA 55',
+            'DIEGO', 'OTRAS ENTRADAS DE EFECTIVO (+)',
             'OTRAS SALIDAS DE EFECTIVO (-)', 'SALDO FINAL DE EFECTIVO', 'NOTA']
     return load_excel_sheet('ventas', 'CAJAS', header=4, usecols=cols)
 
