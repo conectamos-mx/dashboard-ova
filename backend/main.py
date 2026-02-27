@@ -571,9 +571,8 @@ async def get_receivables():
     credito = load_ventas_credito()
     today = datetime.now().date()
     
-    # Filtrar ventas con saldo pendiente > 100 (para evitar residuos de redondeo)
     if 'saldo' in credito.columns:
-        pendientes = credito[credito['saldo'] > 100].copy()
+        pendientes = credito[credito['saldo'] > 0].copy()
         total_pendiente = pendientes['saldo'].sum()
         
         # Calcular días vencidos
