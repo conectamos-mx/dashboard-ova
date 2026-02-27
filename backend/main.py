@@ -122,10 +122,14 @@ def load_ventas_credito() -> pd.DataFrame:
         'SALDO': 'saldo',
         'NOTA (SI APLICA)': 'nota'
     })
-    df = df[df['ID'].notna() & df['ID'].astype(str).str.startswith('VCR')]
+    df = df[
+        df['ID'].astype(str).str.startswith('VCR') |
+        (df['ID'].isna() & df['cliente'].notna())
+    ]
     # Filtrar ventas anuladas (excluir registros con "ANULADO" en nota)
     if 'nota' in df.columns:
         df = df[~df['nota'].astype(str).str.contains('ANULADO', case=False, na=False)]
+    df['saldo'] = pd.to_numeric(df['saldo'], errors='coerce').fillna(0)
     df['tipo'] = 'CREDITO'
     df['forma_pago'] = 'CREDITO'
     return df
