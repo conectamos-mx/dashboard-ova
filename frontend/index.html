@@ -22,28 +22,37 @@
       <!-- Header -->
       <header class="header">
         <div class="header-content">
-          <div class="logo">
-            <img
-              src="/static/logo_ova.jpg"
-              alt="OVA Group Logo"
-              class="logo-img"
-            />
-            <div class="logo-text">
-              <h1>OVA Dashboard</h1>
-              <span class="subtitle">Control de Ventas y Almacén</span>
+          <div class="header-top-row">
+            <div class="logo">
+              <img
+                src="/static/logo_ova.jpg"
+                alt="OVA Group Logo"
+                class="logo-img"
+              />
+              <div class="logo-text">
+                <h1>OVA Dashboard</h1>
+                <span class="subtitle">Control de Ventas y Almacén</span>
+              </div>
             </div>
+            <button id="filter-toggle" class="filter-toggle-btn" aria-expanded="false">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>
+              <span id="filter-toggle-label">Filtros</span>
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" class="toggle-chevron"><polyline points="6 9 12 15 18 9"/></svg>
+            </button>
           </div>
-          <div class="date-filter">
-            <div class="filter-group">
-              <label for="start-date">Desde</label>
-              <input type="date" id="start-date" />
+          <div class="filter-panel" id="filter-panel">
+            <div class="date-filter">
+              <div class="filter-group">
+                <label for="start-date">Desde</label>
+                <input type="date" id="start-date" />
+              </div>
+              <div class="filter-group">
+                <label for="end-date">Hasta</label>
+                <input type="date" id="end-date" />
+              </div>
+              <button id="filter-btn" class="btn-primary">Filtrar</button>
+              <button id="reset-btn" class="btn-secondary">Reiniciar</button>
             </div>
-            <div class="filter-group">
-              <label for="end-date">Hasta</label>
-              <input type="date" id="end-date" />
-            </div>
-            <button id="filter-btn" class="btn-primary">Filtrar</button>
-            <button id="reset-btn" class="btn-secondary">Reiniciar</button>
           </div>
         </div>
       </header>
@@ -233,6 +242,55 @@
                     </tr>
                   </thead>
                   <tbody></tbody>
+                </table>
+              </div>
+            </div>
+
+            <!-- Estado de Cuenta por Cliente -->
+            <div class="chart-card chart-wide" id="client-ledger-section">
+              <div class="chart-header">
+                <h3>📋 Estado de Cuenta por Cliente</h3>
+                <div class="custom-select" id="client-dropdown">
+                  <div class="custom-select-trigger" id="client-select-trigger">
+                    <span id="client-select-label">Cargando clientes...</span>
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" class="select-arrow"><polyline points="6 9 12 15 18 9"/></svg>
+                  </div>
+                  <div class="custom-select-options" id="client-select-options"></div>
+                </div>
+              </div>
+              <div class="client-summary-bar" id="client-summary">
+                <div class="summary-chip">
+                  <span class="chip-label">Total Vendido</span>
+                  <span class="chip-value" id="ledger-total-venta">$0.00</span>
+                </div>
+                <div class="summary-chip">
+                  <span class="chip-label">Total Cobrado</span>
+                  <span class="chip-value chip-cobrado" id="ledger-total-cobrado">$0.00</span>
+                </div>
+                <div class="summary-chip">
+                  <span class="chip-label">Saldo Pendiente</span>
+                  <span class="chip-value chip-pendiente" id="ledger-saldo-pendiente">$0.00</span>
+                </div>
+              </div>
+              <div class="chart-body table-body">
+                <table id="table-client-ledger">
+                  <thead>
+                    <tr>
+                      <th>Fecha</th>
+                      <th>Venta</th>
+                      <th>Abono</th>
+                      <th>Saldo</th>
+                    </tr>
+                  </thead>
+                  <tbody></tbody>
+                  <tfoot>
+                    <tr class="ledger-total-row">
+                      <td>TOTAL</td>
+                      <td id="ledger-foot-venta"></td>
+                      <td id="ledger-foot-cobrado"></td>
+                      <td id="ledger-foot-saldo"></td>
+                    </tr>
+                  </tfoot>
                 </table>
               </div>
             </div>

@@ -88,7 +88,7 @@ def load_ventas_credito() -> pd.DataFrame:
     """Carga ventas a crédito"""
     cols = ['SEGMENTO DE NEGOCIO', 'TIPO DE VENTA', 'TIPO/PRODUCTO', 'CLIENTE ADMON',
             'KG NETOS', 'CAJAS O BULTOS', 'PRECIO UNITARIO', 'TOTAL VENTA',
-            'OPERADOR', 'FECHA', 'SALDO', 'NOTA (SI APLICA)', 'ID']
+            'OPERADOR', 'FECHA', 'SALDO', 'NOTA (SI APLICA)', 'ID', 'COBROS EFECTUADOS']
     return load_excel_sheet('ventas', 'VENTAS A CRÉDITO', header=7, usecols=cols)
 
 

@@ -21,29 +21,42 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 function initDateFilters() {
-    // Por defecto, mostrar el mes actual
     const today = new Date();
     const firstDayOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
-    
+
     document.getElementById('start-date').value = formatDateForInput(firstDayOfMonth);
     document.getElementById('end-date').value = formatDateForInput(today);
-    
+
     currentFilters.startDate = formatDateForAPI(firstDayOfMonth);
     currentFilters.endDate = formatDateForAPI(today);
+
+    updateFilterToggleLabel();
 }
 
 function setupEventListeners() {
     document.getElementById('filter-btn').addEventListener('click', applyFilters);
     document.getElementById('reset-btn').addEventListener('click', resetFilters);
+
+    const toggleBtn = document.getElementById('filter-toggle');
+    if (toggleBtn) {
+        toggleBtn.addEventListener('click', () => {
+            const panel = document.getElementById('filter-panel');
+            const isOpen = panel.classList.toggle('open');
+            toggleBtn.setAttribute('aria-expanded', isOpen);
+            toggleBtn.classList.toggle('active', isOpen);
+        });
+    }
 }
 
 function applyFilters() {
     const startDate = document.getElementById('start-date').value;
     const endDate = document.getElementById('end-date').value;
-    
+
     currentFilters.startDate = startDate || null;
     currentFilters.endDate = endDate || null;
-    
+
+    updateFilterToggleLabel();
+    collapseFilterPanel();
     loadAllData();
 }
 
@@ -52,8 +65,43 @@ function resetFilters() {
     document.getElementById('end-date').value = '';
     currentFilters.startDate = null;
     currentFilters.endDate = null;
-    
+
+    updateFilterToggleLabel();
+    collapseFilterPanel();
     loadAllData();
+}
+
+function collapseFilterPanel() {
+    const panel = document.getElementById('filter-panel');
+    const toggleBtn = document.getElementById('filter-toggle');
+    if (panel) panel.classList.remove('open');
+    if (toggleBtn) {
+        toggleBtn.setAttribute('aria-expanded', 'false');
+        toggleBtn.classList.remove('active');
+    }
+}
+
+function updateFilterToggleLabel() {
+    const label = document.getElementById('filter-toggle-label');
+    if (!label) return;
+    const start = document.getElementById('start-date').value;
+    const end = document.getElementById('end-date').value;
+    if (!start && !end) {
+        label.textContent = 'Filtros';
+        return;
+    }
+    const fmt = (d) => {
+        if (!d) return '';
+        const [y, m, day] = d.split('-');
+        return `${day}/${m}`;
+    };
+    const startFmt = fmt(start);
+    const endFmt = fmt(end);
+    if (startFmt && endFmt && startFmt !== endFmt) {
+        label.textContent = `${startFmt} – ${endFmt}`;
+    } else {
+        label.textContent = startFmt || endFmt;
+    }
 }
 
 // ==================== UTILIDADES ====================
@@ -157,6 +205,7 @@ async function loadAllData() {
             loadExpenses(),
             loadTopClients(),
             loadReceivables(),
+            loadClientLedger(),
             loadCashStatus()
         ]);
     } catch (error) {
@@ -315,6 +364,78 @@ async function loadReceivables() {
     } else {
         tbody.innerHTML = '<tr><td colspan="4" style="text-align: center; color: var(--text-muted);">Sin cuentas pendientes</td></tr>';
     }
+}
+
+// ==================== ESTADO DE CUENTA POR CLIENTE ====================
+let clientLedgerData = [];
+
+async function loadClientLedger() {
+    const data = await fetchAPI('/api/client-ledger', false);
+    if (!data || !Array.isArray(data) || data.length === 0) return;
+
+    clientLedgerData = data;
+
+    const trigger = document.getElementById('client-select-trigger');
+    const label = document.getElementById('client-select-label');
+    const optionsContainer = document.getElementById('client-select-options');
+    const dropdown = document.getElementById('client-dropdown');
+
+    // Poblar opciones del dropdown custom
+    optionsContainer.innerHTML = '';
+    data.forEach((c, i) => {
+        const item = document.createElement('div');
+        item.className = 'custom-select-option' + (i === 0 ? ' selected' : '');
+        item.dataset.value = c.cliente;
+        item.innerHTML = `
+            <span class="option-name">${c.cliente}</span>
+            <span class="option-saldo">${formatCurrency(c.saldo_pendiente)}</span>
+        `;
+        item.addEventListener('click', () => {
+            optionsContainer.querySelectorAll('.custom-select-option').forEach(o => o.classList.remove('selected'));
+            item.classList.add('selected');
+            label.textContent = c.cliente;
+            dropdown.classList.remove('open');
+            renderClientDetail(c);
+        });
+        optionsContainer.appendChild(item);
+    });
+
+    // Toggle abrir/cerrar
+    trigger.addEventListener('click', (e) => {
+        e.stopPropagation();
+        dropdown.classList.toggle('open');
+    });
+
+    // Cerrar al hacer click fuera
+    document.addEventListener('click', () => dropdown.classList.remove('open'));
+
+    // Mostrar primer cliente
+    label.textContent = data[0].cliente;
+    renderClientDetail(data[0]);
+}
+
+function renderClientDetail(clientData) {
+    document.getElementById('ledger-total-venta').textContent = formatCurrency(clientData.total_venta);
+    document.getElementById('ledger-total-cobrado').textContent = formatCurrency(clientData.total_cobrado);
+    document.getElementById('ledger-saldo-pendiente').textContent = formatCurrency(clientData.saldo_pendiente);
+
+    document.getElementById('ledger-foot-venta').textContent = formatCurrency(clientData.total_venta);
+    document.getElementById('ledger-foot-cobrado').textContent = formatCurrency(clientData.total_cobrado);
+    document.getElementById('ledger-foot-saldo').textContent = formatCurrency(clientData.saldo_pendiente);
+
+    const tbody = document.querySelector('#table-client-ledger tbody');
+    tbody.innerHTML = '';
+
+    clientData.transacciones.forEach(tx => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+            <td>${tx.fecha || '-'}</td>
+            <td>${tx.total_venta > 0 ? formatCurrency(tx.total_venta) : '-'}</td>
+            <td>${tx.cobros > 0 ? formatCurrency(tx.cobros) : '-'}</td>
+            <td>${formatCurrency(tx.saldo)}</td>
+        `;
+        tbody.appendChild(tr);
+    });
 }
 
 // ==================== GRÁFICOS ====================

@@ -120,7 +120,8 @@ def load_ventas_credito() -> pd.DataFrame:
         'OPERADOR': 'operador',
         'FECHA': 'fecha',
         'SALDO': 'saldo',
-        'NOTA (SI APLICA)': 'nota'
+        'NOTA (SI APLICA)': 'nota',
+        'COBROS EFECTUADOS': 'cobros'
     })
     df = df[
         df['ID'].astype(str).str.startswith('VCR') |
@@ -130,6 +131,7 @@ def load_ventas_credito() -> pd.DataFrame:
     if 'nota' in df.columns:
         df = df[~df['nota'].astype(str).str.contains('ANULADO', case=False, na=False)]
     df['saldo'] = pd.to_numeric(df['saldo'], errors='coerce').fillna(0)
+    df['cobros'] = pd.to_numeric(df['cobros'], errors='coerce').fillna(0)
     df['tipo'] = 'CREDITO'
     df['forma_pago'] = 'CREDITO'
     return df
@@ -594,6 +596,53 @@ async def get_receivables():
         }
     
     return {"total_pendiente": 0, "num_cuentas": 0, "detalle": []}
+
+
+@app.get("/api/client-ledger")
+async def get_client_ledger():
+    """Estado de cuenta por cliente: ventas a crédito, cobros y saldo pendiente"""
+    try:
+        credito = load_ventas_credito()
+        credito['fecha'] = pd.to_datetime(credito['fecha'], errors='coerce')
+
+        # Solo clientes con saldo pendiente
+        pendientes = credito[credito['saldo'] > 0].copy()
+
+        resultado = []
+        for cliente_nombre, grupo in pendientes.groupby('cliente', sort=False):
+            if not cliente_nombre or str(cliente_nombre) in ('nan', 'None'):
+                continue
+
+            transacciones = []
+            for _, row in grupo.sort_values('fecha').iterrows():
+                transacciones.append({
+                    "fecha": str(row['fecha'])[:10] if pd.notna(row['fecha']) else '',
+                    "total_venta": float(row['total_venta']) if pd.notna(row['total_venta']) else 0,
+                    "cobros": float(row['cobros']) if pd.notna(row['cobros']) else 0,
+                    "saldo": float(row['saldo']) if pd.notna(row['saldo']) else 0,
+                })
+
+            total_venta = float(grupo['total_venta'].sum())
+            total_cobrado = float(grupo['cobros'].sum())
+            saldo_pendiente = float(grupo['saldo'].sum())
+
+            resultado.append({
+                "cliente": str(cliente_nombre),
+                "total_venta": total_venta,
+                "total_cobrado": total_cobrado,
+                "saldo_pendiente": saldo_pendiente,
+                "transacciones": transacciones
+            })
+
+        # Ordenar por saldo pendiente descendente
+        resultado.sort(key=lambda x: x['saldo_pendiente'], reverse=True)
+        return resultado
+
+    except Exception as e:
+        print(f"Error en /api/client-ledger: {e}")
+        import traceback
+        traceback.print_exc()
+        return []
 
 
 @app.get("/api/expenses")
