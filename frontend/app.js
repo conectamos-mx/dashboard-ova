@@ -377,37 +377,68 @@ async function loadClientLedger() {
 
     const trigger = document.getElementById('client-select-trigger');
     const label = document.getElementById('client-select-label');
-    const optionsContainer = document.getElementById('client-select-options');
     const dropdown = document.getElementById('client-dropdown');
+    const searchInput = document.getElementById('client-search');
+    const optionsList = document.getElementById('client-options-list');
+    let selectedCliente = data[0].cliente;
 
-    // Poblar opciones del dropdown custom
-    optionsContainer.innerHTML = '';
-    data.forEach((c, i) => {
-        const item = document.createElement('div');
-        item.className = 'custom-select-option' + (i === 0 ? ' selected' : '');
-        item.dataset.value = c.cliente;
-        item.innerHTML = `
-            <span class="option-name">${c.cliente}</span>
-            <span class="option-saldo">${formatCurrency(c.saldo_pendiente)}</span>
-        `;
-        item.addEventListener('click', () => {
-            optionsContainer.querySelectorAll('.custom-select-option').forEach(o => o.classList.remove('selected'));
-            item.classList.add('selected');
-            label.textContent = c.cliente;
-            dropdown.classList.remove('open');
-            renderClientDetail(c);
+    function renderOptions(filter = '') {
+        const term = filter.toLowerCase().trim();
+        const filtered = term ? data.filter(c => c.cliente.toLowerCase().includes(term)) : data;
+        optionsList.innerHTML = '';
+
+        if (filtered.length === 0) {
+            optionsList.innerHTML = '<div class="client-no-results">Sin resultados</div>';
+            return;
+        }
+
+        filtered.forEach(c => {
+            const item = document.createElement('div');
+            item.className = 'custom-select-option' + (c.cliente === selectedCliente ? ' selected' : '');
+            item.dataset.value = c.cliente;
+            item.innerHTML = `
+                <span class="option-name">${c.cliente}</span>
+                <span class="option-saldo">${formatCurrency(c.saldo_pendiente)}</span>
+            `;
+            item.addEventListener('click', () => {
+                selectedCliente = c.cliente;
+                label.textContent = c.cliente;
+                dropdown.classList.remove('open');
+                searchInput.value = '';
+                renderOptions();
+                renderClientDetail(c);
+            });
+            optionsList.appendChild(item);
         });
-        optionsContainer.appendChild(item);
-    });
+    }
+
+    renderOptions();
+
+    // Buscar al escribir
+    searchInput.addEventListener('input', (e) => renderOptions(e.target.value));
+
+    // Evitar que clicks dentro del search cierren el dropdown
+    searchInput.addEventListener('click', (e) => e.stopPropagation());
 
     // Toggle abrir/cerrar
     trigger.addEventListener('click', (e) => {
         e.stopPropagation();
-        dropdown.classList.toggle('open');
+        const opening = !dropdown.classList.contains('open');
+        dropdown.classList.toggle('open', opening);
+        if (opening) {
+            setTimeout(() => searchInput.focus(), 50);
+        } else {
+            searchInput.value = '';
+            renderOptions();
+        }
     });
 
     // Cerrar al hacer click fuera
-    document.addEventListener('click', () => dropdown.classList.remove('open'));
+    document.addEventListener('click', () => {
+        dropdown.classList.remove('open');
+        searchInput.value = '';
+        renderOptions();
+    });
 
     // Mostrar primer cliente
     label.textContent = data[0].cliente;
