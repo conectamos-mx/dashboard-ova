@@ -27,6 +27,7 @@ try:
         load_stock_almacen_cebolla,
         load_stock_almacen_huevo,
         load_cajas,
+        load_pagos_generales,
         get_data_source_info
     )
 except ImportError:
@@ -39,6 +40,7 @@ except ImportError:
         load_stock_almacen_cebolla,
         load_stock_almacen_huevo,
         load_cajas,
+        load_pagos_generales,
         get_data_source_info
     )
 
@@ -600,41 +602,63 @@ async def get_receivables():
 
 @app.get("/api/client-ledger")
 async def get_client_ledger():
-    """Estado de cuenta por cliente: ventas a crédito, cobros y saldo pendiente"""
+    """Estado de cuenta por cliente: ventas a crédito + pagos de PAGOS_GENERALES"""
     try:
+        # --- Ventas a crédito (todas, no solo pendientes) ---
         credito = load_ventas_credito()
         credito['fecha'] = pd.to_datetime(credito['fecha'], errors='coerce')
 
-        # Solo clientes con saldo pendiente
-        pendientes = credito[credito['saldo'] > 0].copy()
+        # --- Pagos generales (incluir filas sin ID si tienen cliente y monto) ---
+        pagos_raw = load_pagos_generales()
+        pagos_raw = pagos_raw[
+            pagos_raw['CLIENTE ADMON'].notna() &
+            (pd.to_numeric(pagos_raw['MONTO PAGADO'], errors='coerce') > 0)
+        ].copy()
+        pagos_raw['FECHA DE COBRO'] = pd.to_datetime(pagos_raw['FECHA DE COBRO'], errors='coerce')
+        pagos_raw['MONTO PAGADO'] = pd.to_numeric(pagos_raw['MONTO PAGADO'], errors='coerce').fillna(0)
+        pagos_raw['CLIENTE ADMON'] = pagos_raw['CLIENTE ADMON'].astype(str).str.strip().str.upper()
+
+        # Clientes únicos con saldo pendiente (para el dropdown)
+        clientes = credito[credito['saldo'] > 0]['cliente'].dropna().unique()
 
         resultado = []
-        for cliente_nombre, grupo in pendientes.groupby('cliente', sort=False):
-            if not cliente_nombre or str(cliente_nombre) in ('nan', 'None'):
+        for cliente_nombre in clientes:
+            if str(cliente_nombre) in ('nan', 'None', ''):
                 continue
 
-            transacciones = []
-            for _, row in grupo.sort_values('fecha').iterrows():
-                transacciones.append({
+            # TODAS las ventas a crédito del cliente → filas tipo "nota"
+            ventas_cliente = credito[credito['cliente'] == cliente_nombre]
+            movimientos = []
+            for _, row in ventas_cliente.sort_values('fecha').iterrows():
+                movimientos.append({
                     "fecha": str(row['fecha'])[:10] if pd.notna(row['fecha']) else '',
-                    "total_venta": float(row['total_venta']) if pd.notna(row['total_venta']) else 0,
-                    "cobros": float(row['cobros']) if pd.notna(row['cobros']) else 0,
-                    "saldo": float(row['saldo']) if pd.notna(row['saldo']) else 0,
+                    "nota": float(row['total_venta']) if pd.notna(row['total_venta']) else 0,
+                    "abono": None
                 })
 
-            total_venta = float(grupo['total_venta'].sum())
-            total_cobrado = float(grupo['cobros'].sum())
-            saldo_pendiente = float(grupo['saldo'].sum())
+            # Pagos de este cliente → filas tipo "abono"
+            pagos_cliente = pagos_raw[pagos_raw['CLIENTE ADMON'] == cliente_nombre.upper()]
+            for _, row in pagos_cliente.sort_values('FECHA DE COBRO').iterrows():
+                movimientos.append({
+                    "fecha": str(row['FECHA DE COBRO'])[:10] if pd.notna(row['FECHA DE COBRO']) else '',
+                    "nota": None,
+                    "abono": float(row['MONTO PAGADO']) if row['MONTO PAGADO'] > 0 else None
+                })
+
+            # Ordenar todo por fecha
+            movimientos.sort(key=lambda x: x['fecha'] or '')
+
+            total_venta = sum(m['nota'] for m in movimientos if m['nota'])
+            total_cobrado = sum(m['abono'] for m in movimientos if m['abono'])
 
             resultado.append({
                 "cliente": str(cliente_nombre),
                 "total_venta": total_venta,
                 "total_cobrado": total_cobrado,
-                "saldo_pendiente": saldo_pendiente,
-                "transacciones": transacciones
+                "saldo_pendiente": total_venta - total_cobrado,
+                "movimientos": movimientos
             })
 
-        # Ordenar por saldo pendiente descendente
         resultado.sort(key=lambda x: x['saldo_pendiente'], reverse=True)
         return resultado
 

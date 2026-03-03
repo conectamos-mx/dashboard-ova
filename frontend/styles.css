@@ -1342,7 +1342,18 @@ tr:hover td {
 }
 
 #table-client-ledger tfoot .ledger-total-row td:last-child {
-  color: var(--accent-warning);
+  color: var(--accent-primary);
+}
+
+.abono-cell {
+  color: var(--accent-primary);
+}
+
+#table-client-ledger tfoot .ledger-diff-row td {
+  font-weight: 700;
+  font-size: 0.95rem;
+  padding-top: 6px;
+  border-top: 1px dashed rgba(255, 255, 255, 0.1);
 }
 
 @media (max-width: 768px) {

@@ -131,6 +131,12 @@ def load_cajas() -> pd.DataFrame:
     return load_excel_sheet('ventas', 'CAJAS', header=4, usecols=cols)
 
 
+def load_pagos_generales() -> pd.DataFrame:
+    """Carga la hoja de pagos generales (cobros por cliente)"""
+    cols = ['ID', 'FECHA DE COBRO', 'CLIENTE ADMON', 'MONTO PAGADO', 'TIPO DE MOVIMIENTO']
+    return load_excel_sheet('ventas', 'PAGOS_GENERALES', header=5, usecols=cols)
+
+
 def get_data_source_info() -> dict:
     """Retorna información sobre la fuente de datos actual"""
     return {

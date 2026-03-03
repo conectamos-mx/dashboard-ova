@@ -462,18 +462,21 @@ function renderClientDetail(clientData) {
 
     document.getElementById('ledger-foot-venta').textContent = formatCurrency(clientData.total_venta);
     document.getElementById('ledger-foot-cobrado').textContent = formatCurrency(clientData.total_cobrado);
-    document.getElementById('ledger-foot-saldo').textContent = formatCurrency(clientData.saldo_pendiente);
+    const diffEl = document.getElementById('ledger-foot-diff');
+    diffEl.textContent = formatCurrency(clientData.saldo_pendiente);
+    diffEl.style.color = clientData.saldo_pendiente > 0 ? 'var(--accent-warning)' : 'var(--accent-primary)';
 
     const tbody = document.querySelector('#table-client-ledger tbody');
     tbody.innerHTML = '';
 
-    clientData.transacciones.forEach(tx => {
+    const movimientos = clientData.movimientos || clientData.transacciones || [];
+    movimientos.forEach(tx => {
         const tr = document.createElement('tr');
+        const esAbono = tx.abono != null && tx.abono > 0;
         tr.innerHTML = `
             <td>${tx.fecha || '-'}</td>
-            <td>${tx.total_venta > 0 ? formatCurrency(tx.total_venta) : '-'}</td>
-            <td>${tx.cobros > 0 ? formatCurrency(tx.cobros) : '-'}</td>
-            <td>${formatCurrency(tx.saldo)}</td>
+            <td>${tx.nota != null ? formatCurrency(tx.nota) : '-'}</td>
+            <td class="${esAbono ? 'abono-cell' : ''}">${esAbono ? formatCurrency(tx.abono) : '-'}</td>
         `;
         tbody.appendChild(tr);
     });
