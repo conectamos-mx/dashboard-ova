@@ -368,6 +368,47 @@ async function loadReceivables() {
 
 // ==================== ESTADO DE CUENTA POR CLIENTE ====================
 let clientLedgerData = [];
+let clientLedgerInitialized = false;
+let selectedCliente = null;
+
+function renderClientOptions(filter = '') {
+    const optionsList = document.getElementById('client-options-list');
+    const searchInput = document.getElementById('client-search');
+    const dropdown = document.getElementById('client-dropdown');
+    const label = document.getElementById('client-select-label');
+    if (!optionsList) return;
+
+    const term = filter.toLowerCase().trim();
+    const filtered = term
+        ? clientLedgerData.filter(c => c.cliente.toLowerCase().includes(term))
+        : clientLedgerData;
+
+    optionsList.innerHTML = '';
+
+    if (filtered.length === 0) {
+        optionsList.innerHTML = '<div class="client-no-results">Sin resultados</div>';
+        return;
+    }
+
+    filtered.forEach(c => {
+        const item = document.createElement('div');
+        item.className = 'custom-select-option' + (c.cliente === selectedCliente ? ' selected' : '');
+        item.dataset.value = c.cliente;
+        item.innerHTML = `
+            <span class="option-name">${c.cliente}</span>
+            <span class="option-saldo">${formatCurrency(c.saldo_pendiente)}</span>
+        `;
+        item.addEventListener('click', () => {
+            selectedCliente = c.cliente;
+            label.textContent = c.cliente;
+            dropdown.classList.remove('open');
+            searchInput.value = '';
+            renderClientOptions();
+            renderClientDetail(c);
+        });
+        optionsList.appendChild(item);
+    });
+}
 
 async function loadClientLedger() {
     const data = await fetchAPI('/api/client-ledger', false);
@@ -375,52 +416,26 @@ async function loadClientLedger() {
 
     clientLedgerData = data;
 
-    const trigger = document.getElementById('client-select-trigger');
+    // Mantener el cliente seleccionado si sigue existiendo, si no, ir al primero
+    const stillExists = selectedCliente && data.find(c => c.cliente === selectedCliente);
+    if (!stillExists) selectedCliente = data[0].cliente;
+
     const label = document.getElementById('client-select-label');
+    label.textContent = selectedCliente;
+    renderClientOptions();
+    renderClientDetail(data.find(c => c.cliente === selectedCliente));
+
+    // Los listeners solo se registran una vez
+    if (clientLedgerInitialized) return;
+    clientLedgerInitialized = true;
+
+    const trigger = document.getElementById('client-select-trigger');
     const dropdown = document.getElementById('client-dropdown');
     const searchInput = document.getElementById('client-search');
-    const optionsList = document.getElementById('client-options-list');
-    let selectedCliente = data[0].cliente;
 
-    function renderOptions(filter = '') {
-        const term = filter.toLowerCase().trim();
-        const filtered = term ? data.filter(c => c.cliente.toLowerCase().includes(term)) : data;
-        optionsList.innerHTML = '';
-
-        if (filtered.length === 0) {
-            optionsList.innerHTML = '<div class="client-no-results">Sin resultados</div>';
-            return;
-        }
-
-        filtered.forEach(c => {
-            const item = document.createElement('div');
-            item.className = 'custom-select-option' + (c.cliente === selectedCliente ? ' selected' : '');
-            item.dataset.value = c.cliente;
-            item.innerHTML = `
-                <span class="option-name">${c.cliente}</span>
-                <span class="option-saldo">${formatCurrency(c.saldo_pendiente)}</span>
-            `;
-            item.addEventListener('click', () => {
-                selectedCliente = c.cliente;
-                label.textContent = c.cliente;
-                dropdown.classList.remove('open');
-                searchInput.value = '';
-                renderOptions();
-                renderClientDetail(c);
-            });
-            optionsList.appendChild(item);
-        });
-    }
-
-    renderOptions();
-
-    // Buscar al escribir
-    searchInput.addEventListener('input', (e) => renderOptions(e.target.value));
-
-    // Evitar que clicks dentro del search cierren el dropdown
+    searchInput.addEventListener('input', (e) => renderClientOptions(e.target.value));
     searchInput.addEventListener('click', (e) => e.stopPropagation());
 
-    // Toggle abrir/cerrar
     trigger.addEventListener('click', (e) => {
         e.stopPropagation();
         const opening = !dropdown.classList.contains('open');
@@ -429,20 +444,15 @@ async function loadClientLedger() {
             setTimeout(() => searchInput.focus(), 50);
         } else {
             searchInput.value = '';
-            renderOptions();
+            renderClientOptions();
         }
     });
 
-    // Cerrar al hacer click fuera
     document.addEventListener('click', () => {
         dropdown.classList.remove('open');
         searchInput.value = '';
-        renderOptions();
+        renderClientOptions();
     });
-
-    // Mostrar primer cliente
-    label.textContent = data[0].cliente;
-    renderClientDetail(data[0]);
 }
 
 function renderClientDetail(clientData) {
