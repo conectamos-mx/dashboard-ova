@@ -1356,6 +1356,38 @@ tr:hover td {
   border-top: 1px dashed rgba(255, 255, 255, 0.1);
 }
 
+.ledger-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.btn-download-pdf {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(16, 185, 129, 0.1);
+  border: 1px solid rgba(16, 185, 129, 0.3);
+  border-radius: 8px;
+  color: var(--accent-primary);
+  padding: 7px 13px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s, border-color 0.2s, transform 0.15s;
+  white-space: nowrap;
+}
+
+.btn-download-pdf:hover {
+  background: rgba(16, 185, 129, 0.2);
+  border-color: var(--accent-primary);
+  transform: translateY(-1px);
+}
+
+.btn-download-pdf:active {
+  transform: translateY(0);
+}
+
 @media (max-width: 768px) {
   .client-summary-bar {
     flex-wrap: wrap;

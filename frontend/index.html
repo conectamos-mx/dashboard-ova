@@ -16,6 +16,8 @@
       rel="stylesheet"
     />
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/jspdf-autotable@3.8.2/dist/jspdf.plugin.autotable.min.js"></script>
   </head>
   <body>
     <div class="app">
@@ -250,7 +252,8 @@
             <div class="chart-card chart-wide" id="client-ledger-section">
               <div class="chart-header">
                 <h3>📋 Estado de Cuenta por Cliente</h3>
-                <div class="custom-select" id="client-dropdown">
+                <div class="ledger-header-actions">
+                  <div class="custom-select" id="client-dropdown">
                   <div class="custom-select-trigger" id="client-select-trigger">
                     <span id="client-select-label">Cargando clientes...</span>
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" class="select-arrow"><polyline points="6 9 12 15 18 9"/></svg>
@@ -262,6 +265,11 @@
                     </div>
                     <div id="client-options-list"></div>
                   </div>
+                </div>
+                  <button id="btn-download-pdf" class="btn-download-pdf" title="Descargar PDF">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                    PDF
+                  </button>
                 </div>
               </div>
               <div class="client-summary-bar" id="client-summary">

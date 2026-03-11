@@ -482,6 +482,129 @@ function renderClientDetail(clientData) {
     });
 }
 
+// ==================== PDF DESCARGA ====================
+document.addEventListener('DOMContentLoaded', () => {
+    document.getElementById('btn-download-pdf').addEventListener('click', downloadClientPDF);
+});
+
+function downloadClientPDF() {
+    const clientData = clientLedgerData.find(c => c.cliente === selectedCliente);
+    if (!clientData) return;
+
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+
+    const green  = [16, 185, 129];
+    const orange = [245, 158, 11];
+    const dark   = [30, 35, 50];
+    const gray   = [100, 110, 130];
+    const black  = [20, 20, 20];
+
+    const pageW = doc.internal.pageSize.getWidth();
+    const margin = 14;
+
+    // ── Encabezado ──────────────────────────────────────
+    doc.setFillColor(...dark);
+    doc.rect(0, 0, pageW, 28, 'F');
+
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(16);
+    doc.setTextColor(255, 255, 255);
+    doc.text('Grupo OVA', margin, 12);
+
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(9);
+    doc.setTextColor(180, 190, 210);
+    doc.text('Estado de Cuenta por Cliente', margin, 19);
+
+    const fechaGen = new Date().toLocaleDateString('es-MX', { day: '2-digit', month: '2-digit', year: 'numeric' });
+    doc.text(`Generado: ${fechaGen}`, pageW - margin, 19, { align: 'right' });
+
+    // ── Nombre del cliente ───────────────────────────────
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(14);
+    doc.setTextColor(...black);
+    doc.text(clientData.cliente, margin, 40);
+
+    // ── Chips de resumen ─────────────────────────────────
+    const chips = [
+        { label: 'Total Vendido',  value: formatCurrency(clientData.total_venta),   color: black },
+        { label: 'Total Cobrado',  value: formatCurrency(clientData.total_cobrado),  color: green },
+        { label: 'Diferencia',     value: formatCurrency(clientData.saldo_pendiente), color: clientData.saldo_pendiente > 0 ? orange : green },
+    ];
+
+    const chipW = (pageW - margin * 2 - 8) / 3;
+    chips.forEach((chip, i) => {
+        const x = margin + i * (chipW + 4);
+        doc.setFillColor(245, 247, 250);
+        doc.roundedRect(x, 46, chipW, 16, 2, 2, 'F');
+        doc.setFont('helvetica', 'normal');
+        doc.setFontSize(7);
+        doc.setTextColor(...gray);
+        doc.text(chip.label.toUpperCase(), x + 4, 52);
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(10);
+        doc.setTextColor(...chip.color);
+        doc.text(chip.value, x + 4, 59);
+    });
+
+    // ── Tabla de movimientos ─────────────────────────────
+    const movimientos = clientData.movimientos || [];
+    const rows = movimientos.map(m => [
+        m.fecha || '-',
+        m.nota  != null ? formatCurrency(m.nota)  : '-',
+        m.abono != null ? formatCurrency(m.abono) : '-',
+    ]);
+
+    // Filas de totales
+    rows.push(['', '', '']);
+    rows.push(['TOTAL', formatCurrency(clientData.total_venta), formatCurrency(clientData.total_cobrado)]);
+    rows.push(['DIFERENCIA', formatCurrency(clientData.saldo_pendiente), '']);
+
+    doc.autoTable({
+        startY: 68,
+        head: [['Fecha', 'Nota', 'Abono']],
+        body: rows,
+        margin: { left: margin, right: margin },
+        styles: { fontSize: 9, cellPadding: 3, textColor: black },
+        headStyles: { fillColor: dark, textColor: 255, fontStyle: 'bold', fontSize: 9 },
+        columnStyles: {
+            0: { cellWidth: 35 },
+            1: { halign: 'right' },
+            2: { halign: 'right', textColor: green },
+        },
+        didParseCell(data) {
+            const lastRows = rows.length;
+            const totalRowIdx = lastRows - 2;
+            const diffRowIdx  = lastRows - 1;
+            if (data.row.index === totalRowIdx && data.section === 'body') {
+                data.cell.styles.fontStyle = 'bold';
+                data.cell.styles.fillColor = [240, 242, 246];
+            }
+            if (data.row.index === diffRowIdx && data.section === 'body') {
+                data.cell.styles.fontStyle = 'bold';
+                data.cell.styles.fontSize  = 10;
+                data.cell.styles.textColor = clientData.saldo_pendiente > 0 ? orange : green;
+                data.cell.styles.fillColor = [240, 242, 246];
+            }
+        },
+        alternateRowStyles: { fillColor: [250, 251, 253] },
+    });
+
+    // ── Pie de página ────────────────────────────────────
+    const totalPages = doc.internal.getNumberOfPages();
+    for (let p = 1; p <= totalPages; p++) {
+        doc.setPage(p);
+        doc.setFont('helvetica', 'normal');
+        doc.setFontSize(7);
+        doc.setTextColor(...gray);
+        doc.text('Grupo OVA — Documento generado automáticamente', margin, 292);
+        doc.text(`${p} / ${totalPages}`, pageW - margin, 292, { align: 'right' });
+    }
+
+    doc.save(`Estado_Cuenta_${clientData.cliente.replace(/\s+/g, '_')}_${fechaGen.replace(/\//g, '-')}.pdf`);
+}
+
 // ==================== GRÁFICOS ====================
 const chartColors = {
     primary: 'rgba(16, 185, 129, 0.8)',
