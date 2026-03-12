@@ -20,6 +20,9 @@ jobs:
       contents: read
       id-token: write
 
+    outputs:
+      service_url: ${{ steps.get_service_url.outputs.service_url }}
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -107,10 +110,12 @@ jobs:
         run: terraform apply -auto-approve tfplan
 
       - name: Get Service URL
+        id: get_service_url
         working-directory: terraform
         run: |
-          echo "Service URL:"
-          terraform output -raw service_url
+          SERVICE_URL=$(terraform output -raw service_url)
+          echo "Service URL: $SERVICE_URL"
+          echo "service_url=$SERVICE_URL" >> $GITHUB_OUTPUT
 
   notify:
     needs: deploy
@@ -119,8 +124,8 @@ jobs:
     with:
       status: ${{ needs.deploy.result == 'success' && 'success' || 'failure' }}
       environment: "Production"
-      service_name: "conectamos-api"
-      service_url: "https://api.conectamos.mx"
+      service_name: "dashboard-ova"
+      service_url: ${{ needs.deploy.outputs.service_url }}
       commit_sha: ${{ github.sha }}
       actor: ${{ github.actor }}
       run_id: ${{ github.run_id }}
